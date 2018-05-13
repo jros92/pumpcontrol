@@ -30,10 +30,10 @@ csv_file_name = 'csv'
 
 
 # Pins
-seedVoltagePinNo = 26
-lvlPinNoArray0to100 = [4, 17, 27, 22, 23, 24, 25, 5, 6, 13]
-pumpPinNo = 20
-statusLedPin = 21
+SEED_VOLTAGE_PIN_NO = 26
+LVL_PIN_NO_ARRAY = [4, 17, 27, 22, 23, 24, 25, 5, 6, 13]    # ordered from 0 to 100
+PUMP_PIN_NO = 20
+STATUS_LED_PIN_NO = 21
 
 
 # Get Timestamp
@@ -47,20 +47,32 @@ def print_and_log(message, log_file):
     log_file.write(message_string)
 
 
+# Probe the 10 level pins for HIGH or LOW and return boolean array
+def probe_level_pins(log_file):
+    lvlPinNoArray = list(LVL_PIN_NO_ARRAY)
+    lvl_pin_values = [False] * len(lvlPinNoArray)
+
+    seedVoltage = LED(SEED_VOLTAGE_PIN_NO)
+    seedVoltage.on()
+    for x in range(len(lvlPinNoArray)):
+        #print_and_log("Checking pin no. {}: GPIO {}".format(x, lvlPinNoArray[x]), log_file)
+        lvlPin = Button(lvlPinNoArray[x], pull_up=False)
+        lvl_pin_values[x] = lvlPin.is_pressed
+    seedVoltage.off()
+    print_and_log("Level Pin status: {}".format(lvl_pin_values), log_file)
+    return lvl_pin_values
+
+
 # read GPIO pins starting with 100%, break at first HIGH and return its corresponding level [0-1]
 def read_tank_level(log_file):
-    lvlPinNoArray = list(reversed(lvlPinNoArray0to100))
-    seedVoltage = LED(seedVoltagePinNo)
-    seedVoltage.on()
-    for x in range(11):
-        if x == 10: break
-        print_and_log("Checking pin no. {}: GPIO {}".format(x, lvlPinNoArray[x]), log_file)
-        lvlPin = Button(lvlPinNoArray[x], pull_up=False)
-        if lvlPin.is_pressed:
+    lvl_pin_values_reversed = list(reversed(list(probe_level_pins(log_file))))
+    for x in range(len(LVL_PIN_NO_ARRAY)+1):
+        if x == len(LVL_PIN_NO_ARRAY):
             break
-    result = (10.0 - x) / 10.0
+        if lvl_pin_values_reversed[x]:
+            break
+    result = (float(len(LVL_PIN_NO_ARRAY)) - x) / float(len(LVL_PIN_NO_ARRAY))
     print_and_log("Detected tank level is {}%".format(result * 100), log_file)
-    seedVoltage.off()
     return result
 
 
@@ -137,16 +149,16 @@ def main():
     csv_file = open(csv_file_path_abs, "w+")
     csv_file.write("Time;Level;Pump\n")
 
-    pump = LED(pumpPinNo, active_high=False)
+    pump = LED(PUMP_PIN_NO, active_high=False)
     #pump_off(pump, log_file)
-    status_led = LED(statusLedPin)
+    status_led = LED(STATUS_LED_PIN_NO)
 
     # CFG stuff - TODO: quick and dirty for testing, needs to be replaced
     cfg_file_threshold_path_abs = os.path.join(my_path, "threshold.cfg")
 
     # Main Loop
     while True:
-        try:
+        #try:
             level = read_tank_level(log_file)
 
             threshold = read_threshold_from_file(cfg_file_threshold_path_abs, log_file)
@@ -173,11 +185,11 @@ def main():
 
             status_led.blink()  # Heartbeat TODO: check if this works as intended
             sleep(sleep_time)  # Wait
-        except IOError as e:
-            print_and_log("File write error occurred: {}".format(e.reason), log_file)
-        except:
-            print_and_log("Unknown error occurred! Exiting...", log_file)
-            break
+        # except IOError as e:
+        #     print_and_log("File write error occurred: {}".format(e.reason), log_file)
+        # except:
+        #     print_and_log("Unknown error occurred! Exiting...", log_file)
+        #     break
 
     # Terminate Program
     print_and_log("Done.", log_file)
