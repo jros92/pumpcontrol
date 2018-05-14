@@ -22,8 +22,9 @@ from datetime import datetime
 from gpiozero import LED
 from gpiozero import Button
 
-# Parameters #########################
-# Default minimum level for pump operation, in per cent (Default = 30);
+# Parameters ###########################################################################################################
+
+# Default minimum level for pump operation, in percent (Default = 30);
 # overwritten with user-specified value if possible
 threshold_default = 30
 # Frequency to check level, in seconds (Default = 30)
@@ -43,7 +44,9 @@ LVL_PIN_NO_ARRAY = [4, 17, 27, 22, 23, 24, 25, 5, 6, 13]    # ordered from 0 to 
 PUMP_PIN_NO = 20
 STATUS_LED_PIN_NO = 21
 
+########################################################################################################################
 
+# FUNCTION DEFINITIONS #################################################################################################
 # Get Timestamp
 def get_timestamp():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -167,7 +170,7 @@ def read_threshold_from_file(filepath, log_file_path_abs):
     return threshold
 
 
-# Main function
+# MAIN FUNCTION ########################################################################################################
 def main():
     now = datetime.now()
     my_path = os.path.abspath(os.path.dirname(__file__))
@@ -211,12 +214,14 @@ def main():
     # Main Loop
     while True:
         try:
+            # Read Level
             level = read_tank_level(lvl_pin_array, seed_voltage, log_file_path_abs)
 
+            # Read Threshold from File
             threshold = read_threshold_from_file(cfg_file_threshold_path_abs, log_file_path_abs)
             print_and_log("Using threshold value of: {}".format(threshold), log_file_path_abs)
 
-            # Turn off pump if necessary
+            # Control pump
             pump_state = 0
             if level * 100 < threshold:
                 #pump_off(pump, log_file)
@@ -232,6 +237,7 @@ def main():
 
             write_to_csv("{};{};{}\n".format(get_timestamp(), level, pump_state), csv_file_path_abs, log_file_path_abs)
 
+            # Send Data to Thingspeak
             print_and_log("Sending data to Thingspeak...", log_file_path_abs)
             send_data_to_thingspeak(THINGSPEAKURL, THINGSPEAKKEY, level * 100, pump_state, log_file_path_abs)
             sys.stdout.flush()
