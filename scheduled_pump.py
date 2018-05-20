@@ -7,7 +7,7 @@ from datetime import datetime
 
 def extract_time_windows_for_day(schedule_row):
     window_cnt = int((len(schedule_row) - 1) / 2)
-    print("Found", window_cnt, "time windows for", schedule_row[0])
+    print("Found {} time windows for {}".format(window_cnt, schedule_row[0]))
     result = []
     for window_i in range(1, window_cnt + 1):
         window = [schedule_row[2 * (window_i - 1) + 1], schedule_row[2 * (window_i - 1) + 2]]
@@ -74,15 +74,13 @@ def is_pump_desired():
     # Determine what day of the week it is today
     now = datetime.now()
     weekday = now.isoweekday()-1
-    print("Today is", now.strftime("%A"))
+    print("Today is {}".format(now.strftime("%A")))
 
     # Extract the corresponding schedule for this day
     schedule_today = schedule_arr[weekday]
 
     # Extract the defined time windows for the day
     time_windows_today = extract_time_windows_for_day(schedule_today)
-    window_cnt_today = len(time_windows_today)
-    print("Found", window_cnt_today, "time windows for", schedule_today[0])
 
     # Check if we are within one of the time windows
     for window in time_windows_today:
@@ -94,7 +92,7 @@ def is_pump_desired():
         window_start_datetime = datetime.combine(now.date(), window_start_time)
         window_end_datetime = datetime.combine(now.date(), window_end_time)
 
-        print("Today's hours of operation:)"
+        print("Today's hours of operation: "
               "{} until {}".format(window_start_time.strftime("%H:%M"), window_end_time.strftime("%H:%M")))
         # print("window_start_datetime, window_end_datetime: ", window_start_datetime, window_end_datetime)
 
