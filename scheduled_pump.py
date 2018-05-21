@@ -16,11 +16,11 @@ def extract_time_windows_for_day(schedule_row):
     return result
 
 
-def read_schedule():
+def read_schedule(schedule_filepath):
     """Read schedule from CSV file without (!) a header"""
     try:
         schedule_arr = []
-        with open('schedule.csv') as schedule_file:
+        with open(schedule_filepath) as schedule_file:
             schedreader = csv.reader(schedule_file, delimiter=',')
             # next(schedreader)  # Skip header
             # print("Rows read:")
@@ -28,8 +28,8 @@ def read_schedule():
                 # print(row)
                 schedule_arr.append(row)
             print("Successfully read schedule from CSV.")
-    except IOError:
-        print("IOError: " + schedule_file)
+    except IOError as err:
+        print("IOError: could not read schedule.csv. {}".format(err))
 
     # Check schedule for integrity
     for row in schedule_arr:
@@ -65,11 +65,11 @@ def read_schedule():
     return schedule_arr
 
 
-def is_pump_desired():
+def is_pump_desired(schedule_filepath):
     """Check if we are within a specified time window of operation for the current weekday"""
 
     # Read the schedule
-    schedule_arr = read_schedule()
+    schedule_arr = read_schedule(schedule_filepath)
 
     # Determine what day of the week it is today
     now = datetime.now()

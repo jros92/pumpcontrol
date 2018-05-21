@@ -256,6 +256,7 @@ def main():
 
     # Manual pump ctl through file TODO: Replace
     manctl_filepath = os.path.join(my_path, "manual_pump_control.cfg")
+    schedule_filepath = os.path.join(my_path, "schedule.csv")
 
     # Initialize pump state variable - pump is always off if not actively pulled LOW by program
     pump_running = False
@@ -280,7 +281,7 @@ def main():
 
             # Control pump
             pump_allowed = is_pump_allowed(level, pump_running, threshold)
-            pump_desired = is_pump_desired(manctl_filepath, log_file_path_abs)
+            pump_desired = is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs)
             if pump_allowed & pump_desired:
                 pump_running = pump_turn_on(pump, log_file_path_abs)
             else:
@@ -331,7 +332,7 @@ def is_pump_allowed(level, pump_running, threshold):
 
 
 #TODO: Write logic here. Ultimately use WSGI / Django???
-def is_pump_desired(manctl_filepath, log_file_path_abs):
+def is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs):
     """Determine if pump operation is desired based on active control mode"""
     global control_mode
     if control_mode == ControlMode.MANUAL:
@@ -339,7 +340,7 @@ def is_pump_desired(manctl_filepath, log_file_path_abs):
         pump_desired = read_pump_on_off(manctl_filepath, log_file_path_abs)
     elif control_mode == ControlMode.SCHEDULED:
         # read schedule from file and compare current weekday and time with schedule
-        pump_desired = scheduled_pump.is_pump_desired()
+        pump_desired = scheduled_pump.is_pump_desired(schedule_filepath)
     elif control_mode == ControlMode.TIMED:
         #
         pump_desired = True
