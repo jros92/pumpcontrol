@@ -108,9 +108,9 @@ def is_pump_desired(schedule_filepath):
 
 
 def main():
-    # read_schedule()
-    print(is_pump_desired())
-    return 0
+    pump_desired = is_pump_desired('schedule.csv')
+    print(pump_desired)
+    return pump_desired
 
 
 if __name__ == "__main__":
