@@ -25,7 +25,7 @@ from datetime import datetime
 from gpiozero import LED
 from gpiozero import Button
 
-import scheduled_pump
+import pump_scheduler
 
 
 # Parameters ###########################################################################################################
@@ -38,8 +38,10 @@ threshold_delta = 10
 # Frequency to check level, in seconds (Default = 30)
 sleep_time = 30
 
-THINGSPEAKKEY = 'C9Z5GCAFI42KFAQK'
+THINGSPEAKKEY = ''
 THINGSPEAKURL = 'https://api.thingspeak.com/update'
+
+cfg_path = 'cfg'
 
 log_file_path = 'logs'  # cannot be left empty
 log_file_name = ''   # prefix for log file name
@@ -63,6 +65,7 @@ class ControlMode(Enum):
 
 # GLOBAL VARIABLES #####################################################################################################
 
+DEFAULT_MODE = ControlMode.MANUAL
 control_mode = ControlMode.SCHEDULED  # Start in scheduled mode by default
 
 
@@ -150,6 +153,8 @@ def send_data_to_thingspeak(url, key, level, pump_state, log_file_path_abs):
   Send event to internet site
   """
 
+    print_and_log("Sending data to Thingspeak...", log_file_path_abs)
+
     values = {'api_key': key, 'field1': level, 'field2': pump_state}
 
     postdata = urllib.urlencode(values)
@@ -176,6 +181,25 @@ def send_data_to_thingspeak(url, key, level, pump_state, log_file_path_abs):
 
 
 # TODO: Improve (settings file)
+def read_key_from_file(filepath, log_file_path_abs):
+    key = ''
+    try:
+        key_file = open(filepath, "r")
+        key = key_file.readline().rstrip()  # Remove newline character before storing the key!
+        key_file.close()
+        print_and_log("Successfully read key for Thingspeak service from file.", log_file_path_abs)
+    except IOError as key_err:
+        print_and_log("IOError occurred: Key could not be read. "
+                      "Will not be able to send data Continuing anyways. Error:\n{}"
+                      .format(key_err), log_file_path_abs)
+    except ValueError as key_err:
+        print_and_log("Value Error occurred: Key could not be recognized. "
+                      "Will not be able to send data Continuing anyways. Error:\n{}"
+                      .format(key_err), log_file_path_abs)
+    return key
+
+
+# TODO: Improve (settings file)
 def read_threshold_from_file(filepath, log_file_path_abs):
     try:
         cfg_file_threshold = open(filepath, "r")
@@ -188,11 +212,31 @@ def read_threshold_from_file(filepath, log_file_path_abs):
                       .format(threshold_default, threshold_err), log_file_path_abs)
         return threshold_default
     except ValueError as threshold_err:
-        print_and_log("Value Error occurred: threshold could not be read. "
+        print_and_log("Value Error occurred: threshold could not be recognized as an integer. "
                       "Using default value of {}. Error:\n{}"
                       .format(threshold_default, threshold_err), log_file_path_abs)
         return threshold_default
     return threshold
+
+
+# TODO: Replace, only for testing purposes
+def read_mode_from_file(filepath, log_file_path_abs):
+    try:
+        mode_file = open(filepath, "r")
+        mode = ControlMode(int(mode_file.readline()))
+        mode_file.close()
+        print_and_log("Successfully read desired control mode from file: {}".format(mode), log_file_path_abs)
+    except IOError as mode_err:
+        print_and_log("IOError occurred: control mode could not be read. "
+                      "Using default value of {}. Error:\n{}"
+                      .format(ControlMode.MANUAL, mode_err), log_file_path_abs)
+        return DEFAULT_MODE
+    except ValueError as mode_err:
+        print_and_log("Value Error occurred: control mode could not be recognized.  Has to be \"0\", \"1\", or \"2\"."
+                      "Using default value of {}. Error:\n{}"
+                      .format(pump_state_textual(False), mode_err), log_file_path_abs)
+        return DEFAULT_MODE
+    return mode
 
 
 # TODO: Replace, only for testing purposes
@@ -208,7 +252,7 @@ def read_pump_on_off(filepath, log_file_path_abs):
                       .format(pump_state_textual(False), threshold_err), log_file_path_abs)
         return False
     except ValueError as threshold_err:
-        print_and_log("Value Error occurred: pump state could not be read. "
+        print_and_log("Value Error occurred: pump state could not be recognized. Has to be either \"0\" or \"1\". "
                       "Using default value of {}. Error:\n{}"
                       .format(pump_state_textual(False), threshold_err), log_file_path_abs)
         return False
@@ -252,11 +296,17 @@ def main():
         return 1
 
     # CFG stuff - TODO: quick and dirty for testing, needs to be replaced
-    cfg_file_threshold_path_abs = os.path.join(my_path, "threshold.cfg")
+    cfg_file_threshold_path_abs = os.path.join(my_path, cfg_path, "threshold.cfg")
+    key_file_path_abs = os.path.join(my_path, cfg_path, "thingspeak_key.cfg")
+
+    # Read key for Thingspeak service
+    global THINGSPEAKKEY
+    THINGSPEAKKEY = read_key_from_file(key_file_path_abs, log_file_path_abs)
 
     # Manual pump ctl through file TODO: Replace
-    manctl_filepath = os.path.join(my_path, "manual_pump_control.cfg")
-    schedule_filepath = os.path.join(my_path, "schedule.csv")
+    manctl_filepath = os.path.join(my_path, cfg_path, "manual_pump_control.cfg")
+    schedule_filepath = os.path.join(my_path, cfg_path, "schedule.csv")
+    mode_selection_filepath = os.path.join(my_path, cfg_path, "mode_selection.cfg")
 
     # Initialize pump state variable - pump is always off if not actively pulled LOW by program
     pump_running = False
@@ -279,6 +329,10 @@ def main():
             threshold = read_threshold_from_file(cfg_file_threshold_path_abs, log_file_path_abs)
             print_and_log("Using threshold value of: {}".format(threshold), log_file_path_abs)
 
+            # Check selected mode of operation
+            # global control_mode
+            switch_mode(read_mode_from_file(mode_selection_filepath, log_file_path_abs))
+
             # Control pump
             pump_allowed = is_pump_allowed(level, pump_running, threshold)
             pump_desired = is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs)
@@ -295,10 +349,9 @@ def main():
                                   pump_state_textual(pump_running)),
                           log_file_path_abs)
 
-            write_to_csv("{};{};{}\n".format(get_timestamp(), level, int(pump_running)), csv_file_path_abs, log_file_path_abs)
+            write_to_csv("{};{};{}".format(get_timestamp(), level, int(pump_running)), csv_file_path_abs, log_file_path_abs)
 
             # Send Data to Thingspeak
-            print_and_log("Sending data to Thingspeak...", log_file_path_abs)
             send_data_to_thingspeak(THINGSPEAKURL, THINGSPEAKKEY, level * 100, int(pump_running), log_file_path_abs)
             sys.stdout.flush()
 
@@ -331,7 +384,7 @@ def is_pump_allowed(level, pump_running, threshold):
     return pump_allowed
 
 
-#TODO: Write logic here. Ultimately use WSGI / Django???
+# TODO: Write logic here. Ultimately use WSGI / Django???
 def is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs):
     """Determine if pump operation is desired based on active control mode"""
     global control_mode
@@ -340,10 +393,10 @@ def is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs):
         pump_desired = read_pump_on_off(manctl_filepath, log_file_path_abs)
     elif control_mode == ControlMode.SCHEDULED:
         # read schedule from file and compare current weekday and time with schedule
-        pump_desired = scheduled_pump.is_pump_desired(schedule_filepath)
+        pump_desired = pump_scheduler.is_pump_desired(schedule_filepath)
     elif control_mode == ControlMode.TIMED:
         #
-        pump_desired = True
+        pump_desired = False
     else:
         raise Exception("Something went terribly wrong. Pump should be turned off now.\n"
                         "Exact Reason: current control mode not recognized.")
@@ -354,8 +407,16 @@ def is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs):
 def switch_mode(desired_mode):
     global control_mode
     old_mode = control_mode
-    control_mode = desired_mode
-    print("Mode switched from {} to {}".format(old_mode, control_mode))
+
+    if old_mode != desired_mode:
+        if isinstance(desired_mode, ControlMode):
+            control_mode = desired_mode
+            print("Mode switched from {} to {}".format(old_mode, control_mode))
+            return True
+        else:
+            print("Desired mode not recognized. Not switching.")
+
+    return False
 
 
 if __name__ == "__main__":

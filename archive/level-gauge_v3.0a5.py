@@ -25,7 +25,7 @@ from datetime import datetime
 from gpiozero import LED
 from gpiozero import Button
 
-import scheduled_pump
+import pump_scheduler
 
 
 # Parameters ###########################################################################################################
@@ -342,7 +342,7 @@ def is_pump_desired(manctl_filepath, schedule_filepath, log_file_path_abs):
         pump_desired = read_pump_on_off(manctl_filepath, log_file_path_abs)
     elif control_mode == ControlMode.SCHEDULED:
         # read schedule from file and compare current weekday and time with schedule
-        pump_desired = scheduled_pump.is_pump_desired(schedule_filepath)
+        pump_desired = pump_scheduler.is_pump_desired(schedule_filepath)
     elif control_mode == ControlMode.TIMED:
         #
         pump_desired = True
