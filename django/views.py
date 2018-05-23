@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django import forms
 
 import os
 
@@ -27,10 +28,11 @@ def index(request):
     # if this is a POST request we need to process the form data
     new_mode = ''
     if request.method == 'POST':
-        if request.form['submit'] == 'Manual':
+        form = forms.Form(request.POST)
+        if request.POST.get('Manual'):
             new_mode = "Manual"
             pass  # do something
-        elif request.form['submit'] == 'Scheduled':
+        elif request.POST.get('Scheduled'):
             new_mode = "Scheduled"
             pass  # do something else
         else:
