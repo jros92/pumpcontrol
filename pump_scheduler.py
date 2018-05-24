@@ -65,6 +65,32 @@ def read_schedule(schedule_filepath):
     return schedule_arr
 
 
+def get_schedule_textual_vertically(schedule_filepath):
+    schedule_arr = read_schedule(schedule_filepath)
+
+    result = ""
+
+    for row in schedule_arr:
+        time_windows = extract_time_windows_for_day(row)
+
+        result += row[0] + "\n"
+
+        # More detailed checks
+        for window_i in range(0, len(time_windows)):
+            window_start_time = datetime.strptime(time_windows[window_i][0], "%H:%M").time()
+            window_end_time = datetime.strptime(time_windows[window_i][1], "%H:%M").time()
+
+            result += time_windows[window_i][0] + " until " + time_windows[window_i][1] + "\n"
+
+    return result
+
+
+def get_schedule_textual_vertically_html(schedule_filepath):
+    result = get_schedule_textual_vertically(schedule_filepath)
+    result = result.replace("\n", "<br />")
+    return result
+
+
 def is_pump_desired(schedule_filepath):
     """Check if we are within a specified time window of operation for the current weekday"""
 
@@ -108,8 +134,9 @@ def is_pump_desired(schedule_filepath):
 
 
 def main():
-    pump_desired = is_pump_desired('schedule.csv')
+    pump_desired = is_pump_desired('cfg/schedule.csv')
     print(pump_desired)
+    print(get_schedule_textual_vertically('cfg/schedule.csv'))
     return pump_desired
 
 
