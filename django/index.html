@@ -38,12 +38,13 @@
   {% if active_mode == "TIMED" %}
     <h3>Timed Mode:</h3>
     <p>Time left: {{ time_left }}</p>
-    <p>Timer expires: {{ timer_expiration }}</p>
+    <p>Timer expires: {{ timer_expiration }} UTC</p>
     <form method="post">
       {% csrf_token %}
-      <input type="submit" value="+ 1 Hour" name="Timed.AddOneHour" class="button button--timer--manipulator">
-      <input type="submit" value="+ 15 Minutes" name="Timed.AddFifteenMinutes" class="button button--timer--manipulator">
-      <input type="submit" value="Set to..." name="Timed.SetTo" class="button button--timer--manipulator" disabled>
+      <input type="submit" value="+ 1 Hour" name="Timer.AddOneHour" class="button button--timer--manipulator">
+      <input type="submit" value="+ 15 Minutes" name="Timer.AddFifteenMinutes" class="button button--timer--manipulator">
+      <input type="submit" value="Set to..." name="Timer.SetTo" class="button button--timer--manipulator" disabled>
+      <input type="submit" value="Reset" name="Timer.Reset" class="button button--timer--manipulator">
     </form>
   {% endif %}
   </div>

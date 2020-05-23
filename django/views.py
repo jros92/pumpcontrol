@@ -25,6 +25,7 @@ cfg_directory = os.path.join("/home/pi/pumpcontrol", "cfg")
 mode_file_path = os.path.join(cfg_directory, "mode_selection.cfg")
 manual_state_file_path = os.path.join(cfg_directory, "manual_pump_control.cfg")
 schedule_file_path = os.path.join(cfg_directory, "schedule.csv")
+timer_file_path = os.path.join(cfg_directory, "timer.cfg")
 
 # def check_pumpcontrol_running():
 #     #subprocess.check_output(['ls', '-l'])
@@ -136,6 +137,12 @@ def index(request):
             write_manual_state_to_file("0")
         elif request.POST.get('Manual.On'):
             write_manual_state_to_file("1")
+        if request.POST.get('Timer.AddOneHour'):
+            pump_timer.add_one_hour(timer_file_path, 0)
+        if request.POST.get('Timer.AddFifteenMinutes'):
+            pump_timer.add_fifteen_minutes(timer_file_path, 0)
+        if request.POST.get('Timer.Reset'):
+            pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
         else:
             pass  # unknown
 
@@ -144,6 +151,7 @@ def index(request):
 
     # if a GET (or any other method) we'll create a blank form
     else:
+        # Retrieve variables from pumpcontrol modules and text files
         today_textual = pump_scheduler.get_today_textual()
         manual_state = read_manual_state_from_file()
         if manual_state == "1":
@@ -155,8 +163,8 @@ def index(request):
         schedule_today = pump_scheduler.get_todays_schedule_textual_vertically(schedule_file_path)
         schedule_tomorrow = pump_scheduler.get_tomorrows_schedule_textual_vertically(schedule_file_path)
 
-        # timer_expiration = pump_timer.get_end_time(timer_filepath, log_file_path_abs)
-        # time_left = get_time_left_textual(timer_filepath, log_file_path_abs)
+        timer_expiration = pump_timer.get_end_time_textual_simplified(timer_file_path, 0)
+        time_left = pump_timer.get_time_left_textual(timer_file_path, 0)
 
         # Export the variables to be used in HTML
         context = {
@@ -166,9 +174,9 @@ def index(request):
             'manual_state': manual_state, 
             'schedule_simple': schedule_simple, 
             'schedule_today': schedule_today,
-            'schedule_tomorrow': schedule_tomorrow #,
-            # 'timer_expiration': timer_expiration,
-            # 'time_left': time_left
+            'schedule_tomorrow': schedule_tomorrow,
+            'timer_expiration': timer_expiration,
+            'time_left': time_left
             }
 
         return render(request, 'frontend/index.html', context)

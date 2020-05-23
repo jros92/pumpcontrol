@@ -5,11 +5,13 @@ import csv
 from time import sleep
 from datetime import datetime, date, time, timedelta
 
+import logging
+import traceback
 
-"""A timer to turn on pump operation for a set period of time, then turn it off.
+"""A timer to turn on pump operation for a set period of time, and turn it off after that time interval elapsed ("the timer expired").
 
 Attributes:
-    end_time: The time at which the timer expires.
+    end_time: The time at which the timer expires. Stored as a unix timestamp in timer.cfg in the CFG directory.
 """
 
 
@@ -17,115 +19,248 @@ Attributes:
 
 def add_time(timer_filepath, log_file_path_abs, days = 0, hours = 0, minutes = 0, seconds = 0):
     """Add time to the timer's time interval"""
-    current_end_time = read_end_time(timer_filepath, log_file_path_abs)
-    new_end_time = current_end_time + timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
-    write_end_time(timer_filepath, new_end_time, log_file_path_abs)
+    current_end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
+    current_end_time_dt = datetime.fromtimestamp(current_end_time_unix)
+
+    # If timer is currently expired, reset the timer to now and add the time
+    if current_end_time_dt < datetime.now():
+        current_end_time_dt = datetime.now()
+        # otherwise, just add the time
+
+    time_to_add_dt = timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
+    new_end_time = current_end_time_dt + time_to_add_dt
+    new_end_time_unix = int(new_end_time.timestamp())
+    print("Added time ({}). New end time is now: {} / unix: {}".format(time_to_add_dt, new_end_time, new_end_time_unix))
+    write_end_time(timer_filepath, new_end_time_unix, log_file_path_abs)
+
+# TODO: Finish and test - needs to be logical, should it be possible to go negative?
+# def subtract_time(timer_filepath, log_file_path_abs, days = 0, hours = 0, minutes = 0, seconds = 0):
+#     """Subtract time from the timer's time interval"""
+#     current_end_time = read_end_time(timer_filepath, log_file_path_abs)
+#     new_end_time = current_end_time - timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
+#     write_end_time(timer_filepath, new_end_time, log_file_path_abs)
+
+# TODO: Write and test
+# def set_timer_end_time_dt(timer_filepath, log_file_path_abs, end_time_dt):
+
+def set_timer_time_left(timer_filepath, log_file_path_abs, days = 0, hours = 0, minutes = 0, seconds = 0):
+    """Reset the timer to a specified time interval"""
+    current_end_time_dt = datetime.now()
+    time_to_add_dt = timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
+    new_end_time = current_end_time_dt + time_to_add_dt
+    new_end_time_unix = int(new_end_time.timestamp())
+    print("Reset timer to ({}). New end time is now: {} / unix: {}".format(time_to_add_dt, new_end_time, new_end_time_unix))
+    write_end_time(timer_filepath, new_end_time_unix, log_file_path_abs)
 
 
-def subtract_time(timer_filepath, log_file_path_abs, days = 0, hours = 0, minutes = 0, seconds = 0):
-    """Subtract time from the timer's time interval"""
-    current_end_time = read_end_time(timer_filepath, log_file_path_abs)
-    new_end_time = current_end_time - timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
-    write_end_time(timer_filepath, new_end_time, log_file_path_abs)
+"""Shortcut Functions to add time"""
 
-def reset_time_interval(timer_filepath, log_file_path_abs, days = 0, hours = 0, minutes = 0, seconds = 0):
-    """Reset timer to specified time interval"""
-    new_end_time = datetime.now() + timedelta(days = days, hours = hours, minutes = minutes, seconds = seconds)
-    write_end_time(timer_filepath, new_end_time, log_file_path_abs)
+def add_one_hour(timer_filepath, log_file_path_abs):
+    add_time(timer_filepath, log_file_path_abs, hours = 1)
+
+
+def add_fifteen_minutes(timer_filepath, log_file_path_abs):
+    add_time(timer_filepath, log_file_path_abs, minutes = 15)
 
 
 """Functions to retrieve information about the time interval"""
 
-def is_pump_desired(timer_filepath, log_file_path_abs):
-    """Check if time is over or not, return True or False"""
-    end_time = read_end_time(timer_filepath, log_file_path_abs)
-    return datetime.now() < end_time
+def get_end_time_unix(timer_filepath, log_file_path_abs):
+    """Get end time as unix timestamp"""
+    end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
+    return end_time_unix
 
 
-def read_end_time(timer_filepath, log_file_path_abs):
-    """Read end time from file"""
-    try:
-        timer_file = open(timer_filepath, "r")
-        timer_endtime = int(timer_file.readline())
-        timer_file.close()
-        print_and_log("Successfully read timer end time from file: {}".format(timer_endtime), log_file_path_abs)
-    except IOError as timer_err:
-        print_and_log("IOError occurred: timer end time could not be read. "
-                      "Using default value of {}. Error:\n{}"
-                      .format(0, timer_err), log_file_path_abs)
-        return 0
-    except ValueError as timer_err:
-        print_and_log("Value Error occurred: timer end time could not be recognized as an integer."
-                      "Using default value of {}. Error:\n{}"
-                      .format(0, timer_err), log_file_path_abs)
-        return 0
-    return timer_endtime
+def get_end_time_textual_full(timer_filepath, log_file_path_abs):
+    """Get end time in full textual representation"""
+    end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
+    end_time_dt = datetime.fromtimestamp(end_time_unix)
+    result = "{}".format(end_time_dt.strftime("%A, %d %B %Y, %H:%M:%S"))
+    return result
 
 
-# TODO: Finish and test
-# def get_end_time(timer_filepath, log_file_path_abs):
-#     """Time left on the timer in seconds"""
-#     end_time = read_end_time(timer_filepath, log_file_path_abs)
-#     result = "{}".format(end_time.strftime("%A, %d %B %Y"))
-#     return result
+def get_end_time_textual_simplified(timer_filepath, log_file_path_abs):
+    """Get end time in simplified textual representation"""
+    end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
+    end_time_dt = datetime.fromtimestamp(end_time_unix)
+    result = ""
+    if (end_time_dt - datetime.now()) >= timedelta(days = 1):
+        result += "In {} days".format((end_time_dt - datetime.now()).days)
+    else:
+        result += "Today"
+    result += " at {}".format(end_time_dt.strftime("%H:%M:%S"))
+    return result
 
 
 def get_time_left_seconds(timer_filepath, log_file_path_abs):
     """Time left on the timer in seconds"""
-    end_time = read_end_time(timer_filepath, log_file_path_abs)
-    return (end_time - datetime.now())
+    time_left = get_time_left_textual(timer_filepath, log_file_path_abs)
+    # print("Time left: {} seconds".format(time_left))
+    return time_left.total_seconds()
 
 
-# #TODO: Finish and Test
-# def get_time_left_textual(timer_filepath, log_file_path_abs):
-#     """Time left on the timer in textual form"""
-#     time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
-#     #timedelta?
-#     #return 
+def get_time_left_textual(timer_filepath, log_file_path_abs):
+    """Time left on the timer in seconds"""
+    end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
+    end_time_dt = datetime.fromtimestamp(end_time_unix)
+    # print("End Time datetime object: {}".format(end_time_dt))
+    # print("Now datetime object: {}".format(datetime.now()))
+    time_left = end_time_dt - datetime.now()
+    # print("Time left: {} seconds".format(time_left))
+    return time_left
 
 
-# def write_end_time(self):
-#     datetime.utcfromtimestamp(ts)
-#     try:
-#         mode_file = open(timer_file_path, "w")
-#         mode_file.write(new_mode)
-#         mode_file.close()
-#         print("Successfully wrote new control mode to file: {}".format(new_mode))
-#     except IOError as mode_err:
-#         print("IOError occurred: control mode could not be written. Error:\n{}".format(mode_err))
-#     except ValueError as mode_err:
-#         print("Value Error occurred: control mode could not be written. Error:\n{}".format(mode_err))
+"""Pumping functions"""
+
+def is_pump_desired(timer_filepath, log_file_path_abs):
+    """Check if time is over or not, return True or False"""
+    time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    return time_left_seconds > 0
+
+
+"""File I/O Functions"""
+
+def read_end_time(timer_filepath, log_file_path_abs):
+    """Read end time from file, return unix timestamp as int"""
+    try:
+        timer_file = open(timer_filepath, "r")
+        timer_endtime = int(timer_file.readline())
+        timer_file.close()
+        print("Successfully read timer end time from file. End time: {}, file: {}".format(timer_endtime, timer_filepath), log_file_path_abs)
+    except IOError as timer_err:
+        print("IOError occurred: timer end time file ({}) could not be read. "
+                      "Using default value of {}. Error:\n{}"
+                      .format(timer_filepath, 0, timer_err), log_file_path_abs)
+        return 0
+    except ValueError as timer_err:
+        print("Value Error occurred: timer end time could not be recognized as an integer."
+                      "Using default value of {}. Error:\n{}"
+                      .format(0, timer_err), log_file_path_abs)
+        return 0
+
+    return timer_endtime
+
+
+def write_end_time(timer_filepath, end_time_unix, log_file_path_abs):
+    """Write end time to file as a unix timestamp"""
+    try:
+        timer_file = open(timer_filepath, "w")
+        timer_file.write(str(end_time_unix))
+        timer_file.close()
+        print("Successfully wrote new timer end time to file: {}".format(timer_filepath), log_file_path_abs)
+    except IOError as timer_err:
+        print("IOError occurred: timer end time file ({}) could not be written. Error:\n{}"
+                      .format(timer_filepath, timer_err), log_file_path_abs)
+        return 0
+    except ValueError as timer_err:
+        print("Value Error occurred: timer end time file could not be written. Error:\n{}"
+                      .format(timer_err), log_file_path_abs)
+        return 0
+
+
+def main():
+    """For testing purposes"""
+    print("Now: " + str(datetime.now()))
+    
+    timer_filepath = "cfg/timer.cfg"
+    log_file_path_abs = "testlog_timer.log"
+
+
+    # end_time = read_end_time(timer_filepath, log_file_path_abs)
+    # print("Read end time: {}\n".format(end_time))
+
+    # end_time = get_end_time_textual_full(timer_filepath, log_file_path_abs)
+    # print("Get end time: {}\n".format(end_time))
+
+    # time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    # print("Time left: {} seconds\n".format(time_left_seconds))
+
+    # pump_desired = is_pump_desired(timer_filepath, log_file_path_abs)
+    # print("Pump desired: {}\n".format(pump_desired))
+
+    # write_end_time(timer_filepath, 1590230557, log_file_path_abs)
+
+    # time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    # print("Time left: {} seconds\n".format(time_left_seconds))
+
+    # pump_desired = is_pump_desired(timer_filepath, log_file_path_abs)
+    # print("Pump desired: {}\n".format(pump_desired))
+
+    # add_one_hour(timer_filepath, log_file_path_abs)
+    # add_fifteen_minutes(timer_filepath, log_file_path_abs)
+
+    # time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    # print("Time left: {} seconds\n".format(time_left_seconds))
+
+    # pump_desired = is_pump_desired(timer_filepath, log_file_path_abs)
+    # print("Pump desired: {}\n".format(pump_desired))
+
+    # add_one_hour(timer_filepath, log_file_path_abs)
+
+    print("End time (unix): {}, full: {}\n".format(get_end_time_unix(timer_filepath, log_file_path_abs), get_end_time_textual_full(timer_filepath, log_file_path_abs)))
+    
+    time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    print("Time left: {} seconds\n".format(time_left_seconds))
+
+    add_fifteen_minutes(timer_filepath, log_file_path_abs)
+
+    set_timer_time_left(timer_filepath, log_file_path_abs, seconds = 3)
+
+    time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    print("Time left: {} seconds\n".format(time_left_seconds))
+
+    pump_desired = is_pump_desired(timer_filepath, log_file_path_abs)
+    print("Pump desired: {}\n".format(pump_desired))
+
+    print(get_end_time_textual_simplified(timer_filepath, log_file_path_abs))
+
+    set_timer_time_left(timer_filepath, 0, seconds = 0)
+
+    time_left_seconds = get_time_left_seconds(timer_filepath, log_file_path_abs)
+    print("Time left: {} seconds\n".format(time_left_seconds))
+
+    print(get_end_time_textual_simplified(timer_filepath, log_file_path_abs))
 
 
 
-# def main():
-#     """For testing purposes"""
-#     pump_desired = is_pump_desired()
-#     print(pump_desired)
-#     return pump_desired
 
 
-# if __name__ == "__main__":
+
+
+
+
+if __name__ == "__main__":
+    """For testing purposes"""
+    logging.basicConfig()
+    # logging.basicConfig(level=logging.DEBUG, filename='myapp.log', format='%(asctime)s %(levelname)s: %(message)s')
+    logger = logging.getLogger(__name__)
+    try:
+        main()
+    except Exception as e:
+        logger.exception("Main crashed: %s\n%s", e, traceback.format_exc())
+
+
+
 #     """For testing purposes"""
 #     print("Now: " + str(datetime.now()))
 #     new_timer = Timer(timedelta(hours = 3))
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))
 
 #     new_timer.add_time(hours = 0.5)
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))
 
 #     new_timer.subtract_time(hours = 4)
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))
 
 #     new_timer.reset_time_interval(minutes = 4)
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))
 #     print("***Sleeping for 2 seconds***")
 #     sleep(2)
@@ -133,10 +268,10 @@ def get_time_left_seconds(timer_filepath, log_file_path_abs):
 
 #     new_timer.subtract_time(minutes = 3, seconds = 50)
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))
 #     print("***Sleeping for 10 seconds***")
 #     sleep(10)
 #     print("Pump desired? " + str(new_timer.is_pump_desired()))
-#     print("End time: " + str(new_timer.get_end_time()))
+#     print("End time: " + str(new_timer.get_end_time_textual_full()))
 #     print("Time left: " + str(new_timer.time_left()))

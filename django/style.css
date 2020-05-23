@@ -5,3 +5,11 @@ body {
 h1 {
 	color: blue;
 }
+
+div {
+	box-shadow: 0 0 6px rgba(35, 35, 35, 0.5);
+}
+
+div:hover {
+	box-shadow: 0 0 6px rgba(35, 173, 278, 1);
+}
