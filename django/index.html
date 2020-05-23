@@ -1,31 +1,66 @@
 <!--frontend.html-->
 <head>
   <title>Pump Control</title>
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'pumpcontrol/style.css' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet"> 
 </head>
 <body>
   <h1>Pump Control</h1>
-  <h2>Mode Select:</h2>
-  <p>Current mode: {{ active_mode }}</p>
-  <form method="post">
-    {% csrf_token %}
-    <input type="submit" value="Manual" name="Mode.Manual">
-    <input type="submit" value="Scheduled" name="Mode.Scheduled">
-    <input type="submit" value="Timed" name="Mode.Timed">
-  </form>
-  <!--<p>New mode: {{ new_mode }}</p>-->
-  <h3>Manual Control:</h3>
-  <p>State: {{ manual_state }}</p>
-  <form method="post">
-    {% csrf_token %}
-    <input type="submit" value="OFF" name="Manual.Off">
-    <input type="submit" value="ON" name="Manual.On">
-  </form>
-  <h3>Active Schedule:</h3>
-  <p><pre>{{ schedule_simple | linebreaksbr }}</pre></p>
-  <h2>Status</h2>
-  <h3>Tank level</h3>
-  <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/488590/widgets/746"></iframe>
-  <h3>Pump status</h3>
-  <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/488590/widgets/639"></iframe><br>
-  <a href="https://thingspeak.com/channels/488590">>> Thingspeak channel</a>
+  <p>Welcome! Today is {{ today_textual }}.</p>
+  <div>
+    <h2>Mode Select</h2>
+    <p>Current mode: {{ active_mode }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="submit" value="Manual" name="Mode.Manual" class="item-selector item-mode-selector"{% if active_mode == "MANUAL" %} disabled{% endif %}>
+      <input type="submit" value="Scheduled" name="Mode.Scheduled" class="item-selector item-mode-selector"{% if active_mode == "SCHEDULED" %} disabled{% endif %}>
+      <input type="submit" value="Timed" name="Mode.Timed" class="item-selector item-mode-selector"{% if active_mode == "TIMED" %} disabled{% endif %}>
+    </form>
+    <!--<p>New mode: {{ new_mode }}</p>-->
+  {% if active_mode == "MANUAL" %}
+    <h3>Manual Control:</h3>
+    <p>State: {{ manual_state }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="submit" value="OFF" name="Manual.Off" class="item-selector item-manual-selector"{% if manual_state == "OFF" %} disabled{% endif %}>
+      <input type="submit" value="ON" name="Manual.On" class="item-selector item-manual-selector"{% if manual_state == "ON" %} disabled{% endif %}>
+    </form>
+  {% endif %}
+  {% if active_mode == "SCHEDULED" %}
+    <h3>Today's Schedule:</h3>
+    <p><pre>{{ schedule_today | linebreaksbr }}</pre></p>
+    <h3>Tomorrow's Schedule:</h3>
+    <p><pre>{{ schedule_tomorrow | linebreaksbr }}</pre></p>
+    <h3>Active Schedule:</h3>
+    <p><pre>{{ schedule_simple | linebreaksbr }}</pre></p>
+  {% endif %}
+  {% if active_mode == "TIMED" %}
+    <h3>Timed Mode:</h3>
+    <p>Time left: {{ time_left }}</p>
+    <p>Timer expires: {{ timer_expiration }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="submit" value="+ 1 Hour" name="Timed.AddOneHour" class="button button--timer--manipulator">
+      <input type="submit" value="+ 15 Minutes" name="Timed.AddFifteenMinutes" class="button button--timer--manipulator">
+      <input type="submit" value="Set to..." name="Timed.SetTo" class="button button--timer--manipulator" disabled>
+    </form>
+  {% endif %}
+  </div>
+  <div>
+    <h2>Status</h2>
+    <h3>Tank level</h3>
+    <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/488590/widgets/746"></iframe>
+    <h3>Pump status</h3>
+    <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/488590/widgets/639"></iframe><br>
+    <a href="https://thingspeak.com/channels/488590">>> Thingspeak channel</a>
+  </div>
+  <div>
+    <h2>Settings</h2>
+    <p>Work in progress</p>
+  </div>
+  <div>
+    <h2>Log</h2>
+    <p>Work in progress</p>
+  </div>
 </body>

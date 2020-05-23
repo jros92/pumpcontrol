@@ -91,6 +91,44 @@ def get_schedule_textual_vertically_html(schedule_filepath):
     return result
 
 
+def get_schedule_textual_vertically_for_dayofweek(schedule_filepath, dayofweek):
+
+    # Read the schedule
+    schedule_arr = read_schedule(schedule_filepath)
+
+    # Determine schedule row from day of week
+    row = dayofweek - 1
+
+    # Extract the corresponding schedule for this day
+    schedule_for_day = schedule_arr[row]
+
+    # Extract the defined time windows for the day
+    time_windows = extract_time_windows_for_day(schedule_for_day)
+
+    result = ""
+
+    # Assemble string for time windows
+    for window_i in range(0, len(time_windows)):
+        window_start_time = datetime.strptime(time_windows[window_i][0], "%H:%M").time()
+        window_end_time = datetime.strptime(time_windows[window_i][1], "%H:%M").time()
+
+        result += time_windows[window_i][0] + " until " + time_windows[window_i][1] + "\n"
+
+    return result
+
+
+def get_todays_schedule_textual_vertically(schedule_filepath):
+    now = datetime.now()
+    weekday = now.isoweekday()
+    return get_schedule_textual_vertically_for_dayofweek(schedule_filepath, weekday)
+
+
+def get_tomorrows_schedule_textual_vertically(schedule_filepath):
+    now = datetime.now()
+    weekday = now.isoweekday() + 1
+    return get_schedule_textual_vertically_for_dayofweek(schedule_filepath, weekday)
+
+
 def is_pump_desired(schedule_filepath):
     """Check if we are within a specified time window of operation for the current weekday"""
 
@@ -131,6 +169,11 @@ def is_pump_desired(schedule_filepath):
     # We are not within one of the time windows for today, return False
     print("We are NOT within a time window right now.")
     return False
+
+
+def get_today_textual():
+    result = "{}".format(datetime.now().strftime("%A, %d %B %Y"))
+    return result
 
 
 def main():
