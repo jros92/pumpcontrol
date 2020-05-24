@@ -163,8 +163,8 @@ def index(request):
         schedule_today = pump_scheduler.get_todays_schedule_textual_vertically(schedule_file_path)
         schedule_tomorrow = pump_scheduler.get_tomorrows_schedule_textual_vertically(schedule_file_path)
 
-        timer_expiration = pump_timer.get_end_time_textual_simplified(timer_file_path, 0)
-        time_left = pump_timer.get_time_left_textual(timer_file_path, 0)
+        timer_expiration_textual = pump_timer.get_end_time_textual_simplified(timer_file_path, 0)
+        time_left_textual = pump_timer.get_time_left_textual(timer_file_path, 0)
 
         # Export the variables to be used in HTML
         context = {
@@ -175,8 +175,8 @@ def index(request):
             'schedule_simple': schedule_simple, 
             'schedule_today': schedule_today,
             'schedule_tomorrow': schedule_tomorrow,
-            'timer_expiration': timer_expiration,
-            'time_left': time_left
+            'timer_expiration_textual': timer_expiration_textual,
+            'time_left_textual': time_left_textual
             }
 
         return render(request, 'frontend/index.html', context)

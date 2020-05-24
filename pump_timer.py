@@ -4,6 +4,8 @@
 import csv
 from time import sleep
 from datetime import datetime, date, time, timedelta
+# import pytz
+# from tzlocal import get_localzone
 
 import logging
 import traceback
@@ -83,24 +85,21 @@ def get_end_time_textual_simplified(timer_filepath, log_file_path_abs):
     """Get end time in simplified textual representation"""
     end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
     end_time_dt = datetime.fromtimestamp(end_time_unix)
-    result = ""
-    if (end_time_dt - datetime.now()) >= timedelta(days = 1):
-        result += "In {} days".format((end_time_dt - datetime.now()).days)
+    time_left = get_time_left(timer_filepath, log_file_path_abs)
+    result = "Timer "
+    if time_left >= timedelta(days = 1):
+        result += "expires in {} days".format(time_left.days)
+    elif time_left.total_seconds() > 0:
+        result += "expires today"
     else:
-        result += "Today"
-    result += " at {}".format(end_time_dt.strftime("%H:%M:%S"))
+        result += "expired"
+    result += " at {} UTC".format(end_time_dt.strftime("%H:%M:%S"))
+    # result += " at {}".format(end_time_dt.astimezone(get_localzone()).strftime("%H:%M:%S")) # Not working yet
     return result
 
 
-def get_time_left_seconds(timer_filepath, log_file_path_abs):
-    """Time left on the timer in seconds"""
-    time_left = get_time_left_textual(timer_filepath, log_file_path_abs)
-    # print("Time left: {} seconds".format(time_left))
-    return time_left.total_seconds()
-
-
-def get_time_left_textual(timer_filepath, log_file_path_abs):
-    """Time left on the timer in seconds"""
+def get_time_left(timer_filepath, log_file_path_abs):
+    """Time left on the timer as a timedelta object"""
     end_time_unix = read_end_time(timer_filepath, log_file_path_abs)
     end_time_dt = datetime.fromtimestamp(end_time_unix)
     # print("End Time datetime object: {}".format(end_time_dt))
@@ -108,6 +107,25 @@ def get_time_left_textual(timer_filepath, log_file_path_abs):
     time_left = end_time_dt - datetime.now()
     # print("Time left: {} seconds".format(time_left))
     return time_left
+
+
+def get_time_left_seconds(timer_filepath, log_file_path_abs):
+    """Time left on the timer in seconds"""
+    time_left = get_time_left(timer_filepath, log_file_path_abs)
+    # print("Time left: {} seconds".format(time_left))
+    return time_left.total_seconds()
+
+
+def get_time_left_textual(timer_filepath, log_file_path_abs):
+    """Get a full textual message on the time left on the timer"""
+    time_left = get_time_left(timer_filepath, log_file_path_abs)
+    result = ""
+    if (time_left.total_seconds() > 0):
+        result += "Time left: {}".format(str(time_left).split(".")[0])
+    else:
+        result += "Time expired {} ago".format(str(abs(time_left)).split(".")[0])
+
+    return result
 
 
 """Pumping functions"""
