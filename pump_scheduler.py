@@ -2,7 +2,7 @@
 # Use Python 3
 
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def extract_time_windows_for_day(schedule_row):
@@ -118,14 +118,15 @@ def get_schedule_textual_vertically_for_dayofweek(schedule_filepath, dayofweek):
 
 
 def get_todays_schedule_textual_vertically(schedule_filepath):
-    now = datetime.now()
-    weekday = now.isoweekday()
+    today = datetime.today()
+    weekday = today.isoweekday()
     return get_schedule_textual_vertically_for_dayofweek(schedule_filepath, weekday)
 
 
 def get_tomorrows_schedule_textual_vertically(schedule_filepath):
-    now = datetime.now()
-    weekday = now.isoweekday() + 1
+    today = datetime.today()
+    tomorrow = today + timedelta(days = 1)
+    weekday = tomorrow.isoweekday()
     return get_schedule_textual_vertically_for_dayofweek(schedule_filepath, weekday)
 
 
