@@ -7,17 +7,25 @@ import subprocess
 import csv
 from datetime import datetime
 
-# Load own module ####################################
+# Load own modules ###################################
 import importlib.util
+
+# Pump Scheduler Module
 spec = importlib.util.spec_from_file_location("module.name", "/home/pi/pumpcontrol/pump_scheduler.py")
 pump_scheduler = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pump_scheduler)
+
+# Pump Timer Module
+spec = importlib.util.spec_from_file_location("module.name", "/home/pi/pumpcontrol/pump_timer.py")
+pump_timer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(pump_timer)
 ######################################################
 
 cfg_directory = os.path.join("/home/pi/pumpcontrol", "cfg")
 mode_file_path = os.path.join(cfg_directory, "mode_selection.cfg")
 manual_state_file_path = os.path.join(cfg_directory, "manual_pump_control.cfg")
 schedule_file_path = os.path.join(cfg_directory, "schedule.csv")
+timer_file_path = os.path.join(cfg_directory, "timer.cfg")
 
 # def check_pumpcontrol_running():
 #     #subprocess.check_output(['ls', '-l'])
@@ -40,7 +48,7 @@ def read_schedule_simple():
                 # print(row)
                 schedule_arr.append(row)
             print("Successfully read schedule from CSV.")
-        return schedule_arr
+        return schedule_arrget_schedule_textual_vertically
     except IOError as err:
         print("IOError: could not read schedule.csv. {}".format(err))
         return "Unable to read schedule."
@@ -129,6 +137,12 @@ def index(request):
             write_manual_state_to_file("0")
         elif request.POST.get('Manual.On'):
             write_manual_state_to_file("1")
+        if request.POST.get('Timer.AddOneHour'):
+            pump_timer.add_one_hour(timer_file_path, 0)
+        if request.POST.get('Timer.AddFifteenMinutes'):
+            pump_timer.add_fifteen_minutes(timer_file_path, 0)
+        if request.POST.get('Timer.Reset'):
+            pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
         else:
             pass  # unknown
 
@@ -137,6 +151,8 @@ def index(request):
 
     # if a GET (or any other method) we'll create a blank form
     else:
+        # Retrieve variables from pumpcontrol modules and text files
+        today_textual = pump_scheduler.get_today_textual()
         manual_state = read_manual_state_from_file()
         if manual_state == "1":
             manual_state = "ON"
@@ -144,7 +160,24 @@ def index(request):
             manual_state = "OFF"
 
         schedule_simple = pump_scheduler.get_schedule_textual_vertically(schedule_file_path)
-        context = {'active_mode': active_mode, 'new_mode': new_mode, 'manual_state': manual_state, 'schedule_simple': schedule_simple}
+        schedule_today = pump_scheduler.get_todays_schedule_textual_vertically(schedule_file_path)
+        schedule_tomorrow = pump_scheduler.get_tomorrows_schedule_textual_vertically(schedule_file_path)
+
+        timer_expiration_textual = pump_timer.get_end_time_textual_simplified(timer_file_path, 0)
+        time_left_textual = pump_timer.get_time_left_textual(timer_file_path, 0)
+
+        # Export the variables to be used in HTML
+        context = {
+            'today_textual': today_textual,
+            'active_mode': active_mode, 
+            'new_mode': new_mode, 
+            'manual_state': manual_state, 
+            'schedule_simple': schedule_simple, 
+            'schedule_today': schedule_today,
+            'schedule_tomorrow': schedule_tomorrow,
+            'timer_expiration_textual': timer_expiration_textual,
+            'time_left_textual': time_left_textual
+            }
 
         return render(request, 'frontend/index.html', context)
 
