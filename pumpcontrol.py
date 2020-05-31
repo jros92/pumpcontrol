@@ -90,7 +90,7 @@ def print_and_log(message, log_file_path_abs):
         log_file.write(message_string)
         log_file.close()
     except IOError as e:
-        print("Could not write to log file. IOError occurred: {}".format(e))
+        print("[ERROR] Could not write to log file. IOError occurred: {}".format(e))
 
 
 def write_to_csv(message, csv_file_path_abs, log_file_path_abs):
@@ -99,7 +99,7 @@ def write_to_csv(message, csv_file_path_abs, log_file_path_abs):
         csv_file.write("{}\n".format(message))
         csv_file.close()
     except IOError as e:
-        print_and_log("Could not write to CSV file. IOError occurred: {}".format(e), log_file_path_abs)
+        print_and_log("[ERROR] Could not write to CSV file. IOError occurred: {}".format(e), log_file_path_abs)
 
 
 # Probe the (10) level pins for HIGH or LOW and return boolean array
@@ -109,11 +109,11 @@ def probe_level_pins(lvl_pin_array, seed_voltage, log_file_path_abs):
     seed_voltage.on()
 
     for x in range(len(lvl_pin_array)):
-        #print_and_log("Checking pin no. {}: GPIO {}".format(x, lvlPinNoArray[x]), log_file_path_abs)
+        #print_and_log("[DEBUG] Checking pin no. {}: GPIO {}".format(x, lvlPinNoArray[x]), log_file_path_abs)
         lvl_pin_values[x] = lvl_pin_array[x].is_pressed
 
     seed_voltage.off()
-    print_and_log("Level Pin status: {}".format(lvl_pin_values), log_file_path_abs)
+    print_and_log("[DEBUG] Level Pin status: {}".format(lvl_pin_values), log_file_path_abs)
 
     return lvl_pin_values
 
@@ -130,21 +130,21 @@ def read_tank_level(lvl_pin_array, seed_voltage, log_file_path_abs):
         if lvl_pin_values_reversed[x]:
             break
     result = (float(lvl_pin_cnt) - x) / float(lvl_pin_cnt)
-    print_and_log("Detected tank level is {}%".format(result * 100), log_file_path_abs)
+    print_and_log("[INFO] Detected tank level is {}%".format(result * 100), log_file_path_abs)
     return result
 
 
 # Turn on pump
 def pump_turn_on(pump, log_file_path_abs):
     pump.on()  # Pump is ON when LOW
-    print_and_log("Pump turned ON", log_file_path_abs)
+    print_and_log("[INFO] Turning Pump ON", log_file_path_abs)
     return True
 
 
 # Turn off pump
 def pump_turn_off(pump, log_file_path_abs):
     pump.off()  # Pump is OFF when HIGH
-    print_and_log("Pump turned OFF", log_file_path_abs)
+    print_and_log("[INFO] Turning Pump OFF", log_file_path_abs)
     return False
 
 
@@ -158,7 +158,7 @@ def send_data_to_thingspeak(url, key, level, pump_state, log_file_path_abs):
   Send event to internet site
   """
 
-    print_and_log("Sending data to Thingspeak...", log_file_path_abs)
+    print_and_log("[INFO] Sending data to Thingspeak...", log_file_path_abs)
 
     values = {'api_key': key, 'field1': level, 'field2': pump_state}
 
@@ -171,16 +171,16 @@ def send_data_to_thingspeak(url, key, level, pump_state, log_file_path_abs):
         html_string = response.read()
         response.close()
 
-        log_str = "Successfully sent data: {:.1f}, {:.2f}".format(level, pump_state) + ", Update " + html_string
+        log_str = "[INFO] Successfully sent data: {:.1f}, {:.2f}".format(level, pump_state) + ", Update " + html_string
     except urllib2.HTTPError as e:
         # Thrown when URL or Key are wrong
-        log_str = 'Error sending data to Thingspeak: Server could not fulfill the request. ' \
+        log_str = '[ERROR] Error sending data to Thingspeak: Server could not fulfill the request. ' \
                   'Error code: {}'.format(e.code)
     except urllib2.URLError as e:
         # Thrown when no internet connection
-        log_str = 'Error sending data to Thingspeak: Failed to reach server. Reason: {}'.format(e.reason)
+        log_str = '[ERROR] Error sending data to Thingspeak: Failed to reach server. Reason: {}'.format(e.reason)
     except:
-        log_str = 'Unknown error sending data to Thingspeak'
+        log_str = '[ERROR] Unknown error sending data to Thingspeak'
 
     print_and_log(log_str, log_file_path_abs)
 
@@ -192,13 +192,13 @@ def read_key_from_file(filepath, log_file_path_abs):
         key_file = open(filepath, "r")
         key = key_file.readline().rstrip()  # Remove newline character before storing the key!
         key_file.close()
-        print_and_log("Successfully read key for Thingspeak service from file.", log_file_path_abs)
+        print_and_log("[DEBUG] Successfully read key for Thingspeak service from file.", log_file_path_abs)
     except IOError as key_err:
-        print_and_log("IOError occurred: Key could not be read. "
+        print_and_log("[ERROR] IOError occurred: Key could not be read. "
                       "Will not be able to send data Continuing anyways. Error:\n{}"
                       .format(key_err), log_file_path_abs)
     except ValueError as key_err:
-        print_and_log("Value Error occurred: Key could not be recognized. "
+        print_and_log("[ERROR] Value Error occurred: Key could not be recognized. "
                       "Will not be able to send data Continuing anyways. Error:\n{}"
                       .format(key_err), log_file_path_abs)
     return key
@@ -210,14 +210,14 @@ def read_threshold_from_file(filepath, log_file_path_abs):
         cfg_file_threshold = open(filepath, "r")
         threshold = int(cfg_file_threshold.readline())
         cfg_file_threshold.close()
-        print_and_log("Successfully read threshold value from file: {}".format(threshold), log_file_path_abs)
+        print_and_log("[DEBUG] Successfully read threshold value from file: {}".format(threshold), log_file_path_abs)
     except IOError as threshold_err:
-        print_and_log("IOError occurred: threshold could not be read. "
+        print_and_log("[ERROR] IOError occurred: threshold could not be read. "
                       "Using default value of {}. Error:\n{}"
                       .format(threshold_default, threshold_err), log_file_path_abs)
         return threshold_default
     except ValueError as threshold_err:
-        print_and_log("Value Error occurred: threshold could not be recognized as an integer. "
+        print_and_log("[ERROR] Value Error occurred: threshold could not be recognized as an integer. "
                       "Using default value of {}. Error:\n{}"
                       .format(threshold_default, threshold_err), log_file_path_abs)
         return threshold_default
@@ -230,14 +230,14 @@ def read_mode_from_file(filepath, log_file_path_abs):
         mode_file = open(filepath, "r")
         mode = ControlMode(mode_file.readline())
         mode_file.close()
-        print_and_log("Successfully read desired control mode from file: {}".format(mode), log_file_path_abs)
+        print_and_log("[DEBUG] Successfully read desired control mode from file: {}".format(mode), log_file_path_abs)
     except IOError as mode_err:
-        print_and_log("IOError occurred: control mode could not be read. "
+        print_and_log("[ERROR] IOError occurred: control mode could not be read. "
                       "Using default value of {}. Error:\n{}"
                       .format(ControlMode.MANUAL, mode_err), log_file_path_abs)
         return DEFAULT_MODE
     except ValueError as mode_err:
-        print_and_log("Value Error occurred: control mode could not be recognized.  Has to be \"0\", \"1\", or \"2\"."
+        print_and_log("[ERROR] Value Error occurred: control mode could not be recognized.  Has to be \"0\", \"1\", or \"2\"."
                       "Using default value of {}. Error:\n{}"
                       .format(pump_state_textual(False), mode_err), log_file_path_abs)
         return DEFAULT_MODE
@@ -250,14 +250,14 @@ def read_pump_on_off(filepath, log_file_path_abs):
         manctl_file = open(filepath, "r")
         manctl = bool(int(manctl_file.readline()))
         manctl_file.close()
-        print_and_log("Successfully read desired pump state from file: {}".format(pump_state_textual(manctl)), log_file_path_abs)
+        print_and_log("[DEBUG] Successfully read desired pump state from file: {}".format(pump_state_textual(manctl)), log_file_path_abs)
     except IOError as threshold_err:
-        print_and_log("IOError occurred: threshold could not be read. "
+        print_and_log("[ERROR] IOError occurred: threshold could not be read. "
                       "Using default value of {}. Error:\n{}"
                       .format(pump_state_textual(False), threshold_err), log_file_path_abs)
         return False
     except ValueError as threshold_err:
-        print_and_log("Value Error occurred: pump state could not be recognized. Has to be either \"0\" or \"1\". "
+        print_and_log("[ERROR] Value Error occurred: pump state could not be recognized. Has to be either \"0\" or \"1\". "
                       "Using default value of {}. Error:\n{}"
                       .format(pump_state_textual(False), threshold_err), log_file_path_abs)
         return False
@@ -271,14 +271,14 @@ def read_timer_end_time_from_file(filepath, log_file_path_abs):
         timer_file = open(filepath, "r")
         timer_end_time = int(timer_file.readline())
         timer_file.close()
-        print_and_log("Successfully read timer end time value from file: {}".format(timer_end_time), log_file_path_abs)
+        print_and_log("[DEBUG] Successfully read timer end time value from file: {}".format(timer_end_time), log_file_path_abs)
     except IOError as timer_end_time_err:
-        print_and_log("IOError occurred: timer end time could not be read. "
+        print_and_log("[ERROR] IOError occurred: timer end time could not be read. "
                       "Using default value of 0. Error:\n{}"
                       .format(timer_end_time_err), log_file_path_abs)
         return 0
     except ValueError as timer_end_time_err:
-        print_and_log("Value Error occurred: timer end time could not be recognized as an integer. "
+        print_and_log("[ERROR] Value Error occurred: timer end time could not be recognized as an integer. "
                       "Using default value of 0. Error:\n{}"
                       .format(timer_end_time_err), log_file_path_abs)
         return 0
@@ -293,16 +293,16 @@ def main():
                                                                     now.strftime("%Y-%m-%d_%H-%M-%S")))
     csv_file_path_abs = os.path.join(my_path, "{}/{}{}.csv".format(log_file_path, csv_file_name,
                                                                     now.strftime("%Y-%m-%d_%H-%M-%S")))
-    print_and_log("Starting...", log_file_path_abs);
+    print_and_log("[INFO] Starting pumpcontrol service", log_file_path_abs);
 
     write_to_csv("Time;Level;Pump", csv_file_path_abs, log_file_path_abs)
 
     try:
         # Set stack size limit to maximum possible
         resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
-        print_and_log("Successfully increased stack size to maximum.", log_file_path_abs)
+        print_and_log("[INFO] Successfully increased stack size to maximum.", log_file_path_abs)
     except Exception as e:
-        print_and_log("Unable to increase stack size. Reason: {}. Continuing...".format(e), log_file_path_abs)
+        print_and_log("[WARNING] Unable to increase stack size. Reason: {}. Continuing...".format(e), log_file_path_abs)
 
     # Create devices using GPIOZERO library
     try:
@@ -315,10 +315,10 @@ def main():
         for x in range(lvl_pin_cnt):
             #print_and_log("Checking pin no. {}: GPIO {}".format(x, lvlPinNoArray[x]), log_file_path_abs)
             lvl_pin_array[x] = Button(LVL_PIN_NO_ARRAY[x], pull_up=False)
-        print_and_log("Done initializing GPIO devices. Using {} level pins.".format(lvl_pin_cnt),
+        print_and_log("[INFO] Done initializing GPIO devices. Using {} level pins.".format(lvl_pin_cnt),
                       log_file_path_abs);
     except Exception as e:
-        print_and_log("Unable to create devices: {}. Exiting...".format(e), log_file_path_abs)
+        print_and_log("[CRITICAL] Unable to create devices: {}. Exiting...".format(e), log_file_path_abs)
         return 1
 
     # CFG stuff - TODO: quick and dirty for testing, needs to be replaced
@@ -350,7 +350,7 @@ def main():
 
             # Read Threshold from File
             threshold = read_threshold_from_file(cfg_file_threshold_path_abs, log_file_path_abs)
-            print_and_log("Using threshold value of: {}".format(threshold), log_file_path_abs)
+            print_and_log("[INFO] Using threshold value of: {}".format(threshold), log_file_path_abs)
 
             # Check selected mode of operation
             # global control_mode
@@ -365,7 +365,7 @@ def main():
                 pump_running = pump_turn_off(pump, log_file_path_abs)
 
             # Log Data
-            print_and_log("Current state: Level: {}% | Pump: [ALLOWED: {}, DESIRED: {}, RUNNING: {}]"
+            print_and_log("[INFO] Current state: Level: {}% | Pump: [ALLOWED: {}, DESIRED: {}, RUNNING: {}]"
                           .format(level * 100,
                                   pump_allowed,
                                   pump_desired,
@@ -379,15 +379,15 @@ def main():
             sys.stdout.flush()
 
             # Wait until next check is due
-            print_and_log("Waiting {} seconds until next check...".format(sleep_time), log_file_path_abs)
+            print_and_log("[DEBUG] Waiting {} seconds until next check...".format(sleep_time), log_file_path_abs)
             sleep(sleep_time)
         except Exception as err:
-            print_and_log("An unknown error occurred! Exiting...", log_file_path_abs)
+            print_and_log("[ERROR] An unknown error occurred! Exiting...", log_file_path_abs)
             print_and_log(traceback.format_exc(), log_file_path_abs)
             raise err
 
     # Terminate Program
-    print_and_log("Terminating...", log_file_path_abs)
+    print_and_log("[INFO] Terminating...", log_file_path_abs)
 
     print("Done.")
     return 0
@@ -422,7 +422,7 @@ def is_pump_desired(manctl_filepath, schedule_filepath, timer_filepath, log_file
         # read timer end time from file and compare current time with end time
         pump_desired = pump_timer.is_pump_desired(timer_filepath, log_file_path_abs)
     else:
-        raise Exception("Something went terribly wrong. Pump should be turned off now.\n"
+        raise Exception("[CRITICAL] Something went terribly wrong. Pump should be turned off now.\n"
                         "Exact Reason: current control mode not recognized.")
 
     return pump_desired
@@ -435,10 +435,10 @@ def switch_mode(desired_mode):
     if old_mode != desired_mode:
         if isinstance(desired_mode, ControlMode):
             control_mode = desired_mode
-            print("Mode switched from {} to {}".format(old_mode, control_mode))
+            print("[INFO] Mode switched from {} to {}".format(old_mode, control_mode))
             return True
         else:
-            print("Desired mode not recognized. Not switching.")
+            print("[WARNING] Desired mode not recognized. Not switching.")
 
     return False
 
