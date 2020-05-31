@@ -57,6 +57,10 @@ def set_timer_time_left(timer_filepath, log_file_path_abs, days = 0, hours = 0, 
 
 """Shortcut Functions to add time"""
 
+def add_four_hours(timer_filepath, log_file_path_abs):
+    add_time(timer_filepath, log_file_path_abs, hours = 4)
+
+
 def add_one_hour(timer_filepath, log_file_path_abs):
     add_time(timer_filepath, log_file_path_abs, hours = 1)
 

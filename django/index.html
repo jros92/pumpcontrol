@@ -3,28 +3,35 @@
   <title>Pump Control</title>
   {% load static %}
   <link rel="stylesheet" type="text/css" href="{% static 'pumpcontrol/style.css' %}">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet"> 
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
+  <link rel="icon" href="{% static 'pumpcontrol/favicon.ico' %}">
+  
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="HandheldFriendly" content="true">
 </head>
 <body>
   <h1>Pump Control</h1>
   <p>Welcome! Today is {{ today_textual }}.</p>
   <div>
     <h2>Mode Select</h2>
-    <p>Current mode: {{ active_mode }}</p>
-    <form method="post">
+    <!-- <p>Current mode: {{ active_mode }}</p> -->
+    <form method="post" class="control_formNO" id="form_mode_switch">
       {% csrf_token %}
-      <input type="submit" value="Manual" name="Mode.Manual" class="button button--mode--selector"{% if active_mode == "MANUAL" %} disabled{% endif %}>
-      <input type="submit" value="Scheduled" name="Mode.Scheduled" class="button button--mode--selector"{% if active_mode == "SCHEDULED" %} disabled{% endif %}>
-      <input type="submit" value="Timed" name="Mode.Timed" class="button button--mode--selector"{% if active_mode == "TIMED" %} disabled{% endif %}>
+      <input type="hidden" name="Mode_Switch" value="">
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Manual" name="Mode.Manual" class="button button--mode--selector"{% if active_mode == "MANUAL" %} disabled{% endif %}>Manual</button>
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Scheduled" name="Mode.Scheduled" class="button button--mode--selector"{% if active_mode == "SCHEDULED" %} disabled{% endif %}>Scheduled</button>
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Timed" name="Mode.Timed" class="button button--mode--selector"{% if active_mode == "TIMED" %} disabled{% endif %}>Timed</button>
     </form>
     <!--<p>New mode: {{ new_mode }}</p>-->
   {% if active_mode == "MANUAL" %}
     <h3>Manual Control:</h3>
-    <p>State: {{ manual_state }}</p>
-    <form method="post">
+    <!-- <p>State: {{ manual_state }}</p> -->
+    <form method="post" class="control_form" id="form_manual_control">
       {% csrf_token %}
-      <input type="submit" value="OFF" name="Manual.Off" class="button button--manual--selector"{% if manual_state == "OFF" %} disabled{% endif %}>
-      <input type="submit" value="ON" name="Manual.On" class="button button--manual--selector"{% if manual_state == "ON" %} disabled{% endif %}>
+      <input type="hidden" name="Manual_Control" value="">
+      <button type="submit" onclick="this.form.Manual_Control.value=this.value" value="OFF" name="Manual.Control" class="button button--manual--selector"{% if manual_state == "OFF" %} disabled{% endif %}>OFF</button>
+      <button type="submit" onclick="this.form.Manual_Control.value=this.value" value="ON" name="Manual.Control" class="button button--manual--selector"{% if manual_state == "ON" %} disabled{% endif %}>ON</button>
     </form>
   {% endif %}
   {% if active_mode == "SCHEDULED" %}
@@ -39,12 +46,14 @@
     <h3>Timed Mode:</h3>
     <p>{{ time_left_textual }}</p>
     <p>{{ timer_expiration_textual }}</p>
-    <form method="post">
+    <form method="post" class="control_form" id="form_timer_control">
       {% csrf_token %}
-      <input type="submit" value="+ 1 Hour" name="Timer.AddOneHour" class="button button--timer--manipulator">
-      <input type="submit" value="+ 15 Minutes" name="Timer.AddFifteenMinutes" class="button button--timer--manipulator">
-      <input type="submit" value="Set to..." name="Timer.SetTo" class="button button--timer--manipulator" disabled>
-      <input type="submit" value="Reset" name="Timer.Reset" class="button button--timer--manipulator">
+      <input type="hidden" name="Timer_Control" value="">
+      <button type="submit" onclick="this.form.Timer_Control.value=this.value" value="AddFourHours" name="Timer.AddFourHours" class="button button--timer--manipulator">+ 4 Hours</button>
+      <button type="submit" onclick="this.form.Timer_Control.value=this.value" value="AddOneHour" name="Timer.AddOneHour" class="button button--timer--manipulator">+ 1 Hour</button>
+      <button type="submit" onclick="this.form.Timer_Control.value=this.value" value="AddFifteenMinutes" name="Timer.AddFifteenMinutes" class="button button--timer--manipulator">+ 15 Minutes</button>
+      <!-- <button type="submit" onclick="this.form.Timer_Control.value=this.value" value="SetTo" name="Timer.SetTo" class="button button--timer--manipulator" disabled>Set to...</button> -->
+      <button type="submit" onclick="this.form.Timer_Control.value=this.value" value="Reset" name="Timer.Reset" class="button button--timer--manipulator">Reset</button>
     </form>
   {% endif %}
   </div>
@@ -64,4 +73,72 @@
     <h2>Log</h2>
     <p>Work in progress</p>
   </div>
+  <div id="credits">
+    <h3>Credits</h3>
+    Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a></br>
+    Credit goes to Matt Hawkins from raspberrypi-spy.co.uk. Thanks for his tutorial on IoT using the RPi and ThingSpeak. I reused the send_data() method to send data to Thingspeak.
+  </div>
 </body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+  /* Mode Switching Form AJAX */
+  $(document).on('submit','#form_mode_switch',function(e) {
+    e.preventDefault();
+
+    $.ajax({
+      type: 'POST',
+      url: '/',
+      data: $("#form_mode_switch").serialize(),
+      // timeout: 100, // AJAX timeout attribute lead to janky behavior, was replaced by setTimeout() on success which works much better!
+
+      success: function() {
+        setTimeout(function() {
+          window.location.reload();
+        }, 10); 
+      }
+
+      // Do not use the error dialog since it sometimes just throws a timeout error for no good reason...
+      // error : function(xhr,errmsg,err) {
+      //     alert("Oops! We have encountered an error: "+errmsg)
+      //     console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+      // }
+    });
+  });
+
+  /* Manual Pump Control Form AJAX */
+  $(document).on('submit','#form_manual_control',function(e) {
+    e.preventDefault();
+
+    $.ajax({
+      type: 'POST',
+      url: '/',
+      data: $("#form_manual_control").serialize(),
+      // timeout: 100, // AJAX timeout attribute lead to janky behavior, was replaced by setTimeout() on success which works much better!
+
+      success: function() {
+        setTimeout(function() {
+          window.location.reload();
+        }, 10); 
+      }
+    });
+  });
+
+  /* Timer Control Form AJAX */
+  $(document).on('submit','#form_timer_control',function(e) {
+    e.preventDefault();
+
+    $.ajax({
+      type: 'POST',
+      url: '/',
+      data: $("#form_timer_control").serialize(),
+      // timeout: 100, // AJAX timeout attribute lead to janky behavior, was replaced by setTimeout() on success which works much better!
+
+      success: function() {
+        setTimeout(function() {
+          window.location.reload();
+        }, 10); 
+      }
+    });
+  });
+</script>

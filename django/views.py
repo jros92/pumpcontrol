@@ -124,30 +124,44 @@ def index(request):
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
         form = forms.Form(request.POST)
-        if request.POST.get('Mode.Manual'):
-            new_mode = "MANUAL"
-            write_mode_to_file(new_mode)
-        elif request.POST.get('Mode.Scheduled'):
-            new_mode = "SCHEDULED"
-            write_mode_to_file(new_mode)
-        elif request.POST.get('Mode.Timed'):
-            new_mode = "TIMED"
-            write_mode_to_file(new_mode)
-        elif request.POST.get('Manual.Off'):
-            write_manual_state_to_file("0")
-        elif request.POST.get('Manual.On'):
-            write_manual_state_to_file("1")
-        if request.POST.get('Timer.AddOneHour'):
-            pump_timer.add_one_hour(timer_file_path, 0)
-        if request.POST.get('Timer.AddFifteenMinutes'):
-            pump_timer.add_fifteen_minutes(timer_file_path, 0)
-        if request.POST.get('Timer.Reset'):
-            pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
-        else:
-            pass  # unknown
 
+        # Look up the name attribute of the form that was submitted, 
+        # then check for submit value and perform corresponding commands
 
-        return HttpResponseRedirect('')
+        # Mode switch commanded
+        if request.POST.get('Mode_Switch'):
+            requested_mode = request.POST['Mode_Switch']
+            if requested_mode == 'Manual':
+                new_mode = "MANUAL"
+            elif requested_mode == 'Scheduled':
+                new_mode = "SCHEDULED"
+            elif requested_mode == 'Timed':
+                new_mode = "TIMED"
+
+            write_mode_to_file(new_mode)
+
+        # Pump switch on/off in Manual control mode commanded
+        if request.POST.get('Manual_Control'):
+            if (request.POST['Manual_Control'] == 'ON'):
+                write_manual_state_to_file("1")
+            else:
+                write_manual_state_to_file("0")
+
+        # Timer change in Timed mode commanded
+        if request.POST.get('Timer_Control'):
+            if request.POST['Timer_Control'] == 'AddFourHours':
+                pump_timer.add_four_hours(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'AddOneHour':
+                pump_timer.add_one_hour(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'AddFifteenMinutes':
+                pump_timer.add_fifteen_minutes(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'Reset':
+                pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
+            else:
+                pass  # unknown
+
+        # return HttpResponseRedirect('') // not needed anymore because of AJAX page reload
+        return HttpResponse('')
 
     # if a GET (or any other method) we'll create a blank form
     else:

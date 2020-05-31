@@ -3,7 +3,7 @@ body {
 }
 
 div {
-	margin: 5px 5px 5px 5px;
+	margin: 5px 10px 15px 10px;
 	padding: 2px 10px 10px 10px;
 	box-shadow: 0 0 6px rgba(35, 35, 35, 0.5);
 }
@@ -14,6 +14,11 @@ div:hover {
 
 h1 {
 	color: blue;
+}
+
+#credits {
+	font-size: 8pt;
+	font-color: #999999;
 }
 
 .button {
