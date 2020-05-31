@@ -122,9 +122,11 @@ def index(request):
     new_mode = ''
 
     # if this is a POST request we need to process the form data
-    # Look up the name attribute of the form that was submitted, then check for submit value and perform corresponding commands
     if request.method == 'POST':
         form = forms.Form(request.POST)
+
+        # Look up the name attribute of the form that was submitted, 
+        # then check for submit value and perform corresponding commands
 
         # Mode switch commanded
         if request.POST.get('Mode_Switch'):
@@ -139,24 +141,26 @@ def index(request):
             write_mode_to_file(new_mode)
 
         # Pump switch on/off in Manual control mode commanded
-        if request.POST.get('Manual.Control'):
-            if (request.POST['Manual.Control'] == 'ON'):
+        if request.POST.get('Manual_Control'):
+            if (request.POST['Manual_Control'] == 'ON'):
                 write_manual_state_to_file("1")
             else:
                 write_manual_state_to_file("0")
 
         # Timer change in Timed mode commanded
-        if request.POST.get('Timer.AddOneHour'):
-            pump_timer.add_one_hour(timer_file_path, 0)
-        if request.POST.get('Timer.AddFifteenMinutes'):
-            pump_timer.add_fifteen_minutes(timer_file_path, 0)
-        if request.POST.get('Timer.Reset'):
-            pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
-        else:
-            pass  # unknown
+        if request.POST.get('Timer_Control'):
+            if request.POST['Timer_Control'] == 'AddFourHours':
+                pump_timer.add_four_hours(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'AddOneHour':
+                pump_timer.add_one_hour(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'AddFifteenMinutes':
+                pump_timer.add_fifteen_minutes(timer_file_path, 0)
+            elif request.POST['Timer_Control'] == 'Reset':
+                pump_timer.set_timer_time_left(timer_file_path, 0, seconds = 0)
+            else:
+                pass  # unknown
 
-
-        # return HttpResponseRedirect('')
+        # return HttpResponseRedirect('') // not needed anymore because of AJAX page reload
         return HttpResponse('')
 
     # if a GET (or any other method) we'll create a blank form
