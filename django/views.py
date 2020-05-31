@@ -122,21 +122,30 @@ def index(request):
     new_mode = ''
 
     # if this is a POST request we need to process the form data
+    # Look up the name attribute of the form that was submitted, then check for submit value and perform corresponding commands
     if request.method == 'POST':
         form = forms.Form(request.POST)
-        if request.POST.get('Mode.Manual'):
-            new_mode = "MANUAL"
+
+        # Mode switch commanded
+        if request.POST.get('Mode_Switch'):
+            requested_mode = request.POST['Mode_Switch']
+            if requested_mode == 'Manual':
+                new_mode = "MANUAL"
+            elif requested_mode == 'Scheduled':
+                new_mode = "SCHEDULED"
+            elif requested_mode == 'Timed':
+                new_mode = "TIMED"
+
             write_mode_to_file(new_mode)
-        elif request.POST.get('Mode.Scheduled'):
-            new_mode = "SCHEDULED"
-            write_mode_to_file(new_mode)
-        elif request.POST.get('Mode.Timed'):
-            new_mode = "TIMED"
-            write_mode_to_file(new_mode)
-        elif request.POST.get('Manual.Off'):
-            write_manual_state_to_file("0")
-        elif request.POST.get('Manual.On'):
-            write_manual_state_to_file("1")
+
+        # Pump switch on/off in Manual control mode commanded
+        if request.POST.get('Manual.Control'):
+            if (request.POST['Manual.Control'] == 'ON'):
+                write_manual_state_to_file("1")
+            else:
+                write_manual_state_to_file("0")
+
+        # Timer change in Timed mode commanded
         if request.POST.get('Timer.AddOneHour'):
             pump_timer.add_one_hour(timer_file_path, 0)
         if request.POST.get('Timer.AddFifteenMinutes'):
@@ -147,7 +156,8 @@ def index(request):
             pass  # unknown
 
 
-        return HttpResponseRedirect('')
+        # return HttpResponseRedirect('')
+        return HttpResponse('')
 
     # if a GET (or any other method) we'll create a blank form
     else:

@@ -3,7 +3,8 @@
   <title>Pump Control</title>
   {% load static %}
   <link rel="stylesheet" type="text/css" href="{% static 'pumpcontrol/style.css' %}">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet"> 
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
+  <link rel="icon" href="{% static 'pumpcontrol/favicon.ico' %}">
 </head>
 <body>
   <h1>Pump Control</h1>
@@ -11,20 +12,21 @@
   <div>
     <h2>Mode Select</h2>
     <p>Current mode: {{ active_mode }}</p>
-    <form method="post">
+    <form method="post" class="control_form" id="form_mode_switch">
       {% csrf_token %}
-      <input type="submit" value="Manual" name="Mode.Manual" class="button button--mode--selector"{% if active_mode == "MANUAL" %} disabled{% endif %}>
-      <input type="submit" value="Scheduled" name="Mode.Scheduled" class="button button--mode--selector"{% if active_mode == "SCHEDULED" %} disabled{% endif %}>
-      <input type="submit" value="Timed" name="Mode.Timed" class="button button--mode--selector"{% if active_mode == "TIMED" %} disabled{% endif %}>
+      <input type="hidden" name="Mode_Switch" value="">
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Manual" name="Mode.Manual" class="button button--mode--selector"{% if active_mode == "MANUAL" %} disabled{% endif %}>Manual</button>
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Scheduled" name="Mode.Scheduled" class="button button--mode--selector"{% if active_mode == "SCHEDULED" %} disabled{% endif %}>Scheduled</button>
+      <button type="submit" onclick="this.form.Mode_Switch.value=this.value" value="Timed" name="Mode.Timed" class="button button--mode--selector"{% if active_mode == "TIMED" %} disabled{% endif %}>Timed</button>
     </form>
     <!--<p>New mode: {{ new_mode }}</p>-->
   {% if active_mode == "MANUAL" %}
     <h3>Manual Control:</h3>
     <p>State: {{ manual_state }}</p>
-    <form method="post">
+    <form method="post" id="form_manual_control">
       {% csrf_token %}
-      <input type="submit" value="OFF" name="Manual.Off" class="button button--manual--selector"{% if manual_state == "OFF" %} disabled{% endif %}>
-      <input type="submit" value="ON" name="Manual.On" class="button button--manual--selector"{% if manual_state == "ON" %} disabled{% endif %}>
+      <input type="submit" value="OFF" name="Manual.Control" class="button button--manual--selector"{% if manual_state == "OFF" %} disabled{% endif %}>
+      <input type="submit" value="ON" name="Manual.Control" class="button button--manual--selector"{% if manual_state == "ON" %} disabled{% endif %}>
     </form>
   {% endif %}
   {% if active_mode == "SCHEDULED" %}
@@ -39,8 +41,9 @@
     <h3>Timed Mode:</h3>
     <p>{{ time_left_textual }}</p>
     <p>{{ timer_expiration_textual }}</p>
-    <form method="post">
+    <form method="post" id="form_timer_control">
       {% csrf_token %}
+      <input type="submit" value="+ 4 Hours" name="Timer.AddFourHours" class="button button--timer--manipulator" disabled>
       <input type="submit" value="+ 1 Hour" name="Timer.AddOneHour" class="button button--timer--manipulator">
       <input type="submit" value="+ 15 Minutes" name="Timer.AddFifteenMinutes" class="button button--timer--manipulator">
       <input type="submit" value="Set to..." name="Timer.SetTo" class="button button--timer--manipulator" disabled>
@@ -64,4 +67,38 @@
     <h2>Log</h2>
     <p>Work in progress</p>
   </div>
+  <div id="credits">
+    <h3>Credits</h3>
+    Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a></br>
+    Credit goes to Matt Hawkins from raspberrypi-spy.co.uk. Thanks for his tutorial on IoT using the RPi and ThingSpeak. I reused the send_data() method to send data to Thingspeak.
+  </div>
 </body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+  $(document).on('submit','#form_mode_switch',function(e) {
+    e.preventDefault();
+
+    $.ajax({
+      type: 'POST',
+      url: '/',
+      data: $("#form_mode_switch").serialize(),
+      timeout: 100,
+       // + '&' + $("#form_mode_switch").attr("name") + '=' + $("#form_mode_switch").attr("value"),
+       // + 
+       //  'csrfmiddlewaretoken='+$('input[name=csrfmiddlewaretoken]').val(),
+
+      success: function() {
+        // alert("Command received!")
+        // console.log("Mode switch successfully submitted.");
+          // New mode: " + $('input[name ="Mode_Switch"]').attr('value'));
+        window.location.reload();
+      },
+
+      error : function(xhr,errmsg,err) {
+          alert("Oops! We have encountered an error: "+errmsg)
+          console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+      }
+    });
+  });
+</script>

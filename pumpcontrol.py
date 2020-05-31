@@ -2,9 +2,9 @@
 # Use Python 3
 
 # Pumpcontrol
-# version 3.1-beta2
+# version 3.2
 
-# Written for the Raspberry Pi Zero W (2018) running Raspbian
+# Written for the Raspberry Pi Zero W (2018) running Raspbian 9
 # Copyright 2018-2020 Joerg R. Schmidt
 
 # Credit goes to Matt Hawkins from raspberrypi-spy.co.uk
