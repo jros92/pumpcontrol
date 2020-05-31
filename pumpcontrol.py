@@ -2,7 +2,7 @@
 # Use Python 3
 
 # Pumpcontrol
-# version 3.2
+# version 3.3-beta1
 
 # Written for the Raspberry Pi Zero W (2018) running Raspbian 9
 # Copyright 2018-2020 Joerg R. Schmidt
@@ -77,8 +77,12 @@ control_mode = ControlMode.SCHEDULED  # Start in scheduled mode by default
 # FUNCTION DEFINITIONS #################################################################################################
 
 
-# Get Timestamp
-def get_timestamp():
+# Get Timestamp up to seconds as string
+def get_timestamp_s():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# Get Timestamp up to microseconds as string 
+def get_timestamp_ms():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
@@ -86,7 +90,7 @@ def print_and_log(message, log_file_path_abs):
     print(message)
     try:
         log_file = open(log_file_path_abs, "a+")
-        message_string = "{}: {}\n".format(get_timestamp(), message)
+        message_string = "{}: {}\n".format(get_timestamp_ms(), message)
         log_file.write(message_string)
         log_file.close()
     except IOError as e:
@@ -372,7 +376,7 @@ def main():
                                   pump_state_textual(pump_running)),
                           log_file_path_abs)
 
-            write_to_csv("{};{};{}".format(get_timestamp(), level, int(pump_running)), csv_file_path_abs, log_file_path_abs)
+            write_to_csv("{};{};{}".format(get_timestamp_s(), level, int(pump_running)), csv_file_path_abs, log_file_path_abs)
 
             # Send Data to Thingspeak
             send_data_to_thingspeak(THINGSPEAKURL, THINGSPEAKKEY, level * 100, int(pump_running), log_file_path_abs)
